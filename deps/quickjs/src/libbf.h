@@ -387,10 +387,10 @@ int bf_normalize_and_round(bf_t *r, limb_t prec1, bf_flags_t flags);
 int bf_can_round(const bf_t *a, slimb_t prec, bf_rnd_t rnd_mode, slimb_t k);
 slimb_t bf_mul_log2_radix(slimb_t a1, unsigned int radix, int is_inv,
                           int is_ceil1);
-int mp_mul(bf_context_t *s, limb_t *result, 
+static int mp_mul(bf_context_t *s, limb_t *result, 
            const limb_t *op1, limb_t op1_size, 
            const limb_t *op2, limb_t op2_size);
-limb_t mp_add(limb_t *res, const limb_t *op1, const limb_t *op2, 
+static limb_t mp_add(limb_t *res, const limb_t *op1, const limb_t *op2, 
               limb_t n, limb_t carry);
 limb_t mp_add_ui(limb_t *tab, limb_t b, size_t n);
 int mp_sqrtrem(bf_context_t *s, limb_t *tabs, limb_t *taba, limb_t n);

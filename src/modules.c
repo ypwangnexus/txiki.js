@@ -29,6 +29,16 @@
 
 #include <string.h>
 
+#if defined(_WIN32)
+#include <windows.h>
+#include <conio.h>
+#include <utime.h>
+#else
+#include <dlfcn.h>
+#include <termios.h>
+#include <sys/ioctl.h>
+#include <sys/wait.h>
+#endif
 
 #ifdef TJS_HAVE_CURL
 
@@ -68,6 +78,68 @@ end:
 
 #endif
 
+typedef JSModuleDef *(JSInitModuleFunc)(JSContext *ctx,
+                                        const char *module_name);
+
+#if defined(_WIN32)
+static JSModuleDef *js_module_loader_so(JSContext *ctx,
+                                        const char *module_name)
+{
+    JS_ThrowReferenceError(ctx, "shared library modules are not supported yet");
+    return NULL;
+}
+#else
+
+static JSModuleDef *js_module_loader_so(JSContext *ctx,
+                                        const char *module_name)
+{
+    JSModuleDef *m;
+    void *hd;
+    JSInitModuleFunc *init;
+    char *filename;
+    
+    if (!strchr(module_name, '/')) {
+        /* must add a '/' so that the DLL is not searched in the
+           system library paths */
+        filename = js_malloc(ctx, strlen(module_name) + 2 + 1);
+        if (!filename)
+            return NULL;
+        strcpy(filename, "./");
+        strcpy(filename + 2, module_name);
+    } else {
+        filename = (char *)module_name;
+    }
+    
+    /* C module */
+    hd = dlopen(filename, RTLD_NOW | RTLD_LOCAL);
+    if (filename != module_name)
+        js_free(ctx, filename);
+    if (!hd) {
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s' as shared library: %s",
+                               module_name, dlerror());
+        goto fail;
+    }
+
+    init = dlsym(hd, "js_init_module");
+    if (!init) {
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s': js_init_module not found",
+                               module_name);
+        goto fail;
+    }
+
+    m = init(ctx, module_name);
+    if (!m) {
+        JS_ThrowReferenceError(ctx, "could not load module filename '%s': initialization error",
+                               module_name);
+    fail:
+        if (hd)
+            dlclose(hd);
+        return NULL;
+    }
+    return m;
+}
+#endif /* !_WIN32 */
+
 JSModuleDef *tjs_module_loader(JSContext *ctx, const char *module_name, void *opaque) {
     static const char http[] = "http://";
     static const char https[] = "https://";
@@ -78,7 +150,11 @@ JSModuleDef *tjs_module_loader(JSContext *ctx, const char *module_name, void *op
     JSValue func_val;
     int r, is_json;
     DynBuf dbuf;
-
+    
+    if (has_suffix(module_name, ".so")) {
+        m = js_module_loader_so(ctx, module_name);
+        return m;
+    }
     if (strncmp(http, module_name, strlen(http)) == 0 || strncmp(https, module_name, strlen(https)) == 0) {
 #ifdef TJS_HAVE_CURL
         return tjs__load_http(ctx, module_name);

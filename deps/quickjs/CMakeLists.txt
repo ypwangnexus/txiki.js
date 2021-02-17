@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.4)
 
 project(quickjs LANGUAGES C)
 
-set(qjs_cflags -Wall)
+set(qjs_cflags -Wall -export-dynamic)
 if(CMAKE_C_COMPILER_ID MATCHES "AppleClang|Clang")
     list(APPEND qjs_cflags
         -Wextra
@@ -44,6 +44,9 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
         DUMP_LEAKS
     )
 endif()
+
+#target_link_options(tjs INTERFACE "-rdynamic") for version > 3.13
+SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic")  
 
 target_include_directories(qjs PUBLIC include)
 target_include_directories(qjs PRIVATE src)

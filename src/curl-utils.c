@@ -67,8 +67,10 @@ int tjs_curl_load_http(DynBuf *dbuf, const char *url) {
     /* some servers don't like requests that are made without a user-agent field, so we provide one */
     curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "tjs/1.0");
 
-#if defined(_WIN32)
+#if defined(_WIN32) || !defined(TJS_HAVE_SYSTEM_CURL)
     curl_easy_setopt(curl_handle, CURLOPT_CAINFO, "cacert.pem");
+#else
+    curl_easy_setopt(curl_handle, CURLOPT_CAPATH, "/etc/ssl/certs/");
 #endif
 
     /* get it! */
@@ -83,7 +85,7 @@ int tjs_curl_load_http(DynBuf *dbuf, const char *url) {
 
     if (res != CURLE_OK) {
         r = -res;
-#if 0
+#if 1
         printf("CURL ERROR: %d %s\n", res,  curl_easy_strerror(res));
 #endif
     }

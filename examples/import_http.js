@@ -5,3 +5,6 @@ import {
 
 greet('saghul');
 
+//import { CryptoJS  } from 'https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js';
+
+//console.log( 'hello,world');

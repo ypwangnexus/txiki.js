@@ -8,3 +8,9 @@
 [submodule "deps/wasm3"]
 	path = deps/wasm3
 	url = https://github.com/wasm3/wasm3.git
+[submodule "deps/wolfssl"]
+	path = deps/wolfssl
+	url = https://github.com/wolfSSL/wolfssl
+[submodule "deps/glfw"]
+	path = deps/glfw
+	url = https://github.com/glfw/glfw

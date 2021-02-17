@@ -1055,7 +1055,7 @@ limb_t mp_add_ui(limb_t *tab, limb_t b, size_t n)
     return k;
 }
 
-limb_t mp_sub(limb_t *res, const limb_t *op1, const limb_t *op2, 
+static limb_t mp_sub(limb_t *res, const limb_t *op1, const limb_t *op2, 
               mp_size_t n, limb_t carry)
 {
     int i;

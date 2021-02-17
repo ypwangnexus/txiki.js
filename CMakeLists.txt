@@ -20,7 +20,6 @@ configure_file(
     "${CMAKE_SOURCE_DIR}/src/version.h"
 )
 
-
 macro(cpr_option OPTION_NAME OPTION_TEXT OPTION_DEFAULT)
     option(${OPTION_NAME} ${OPTION_TEXT} ${OPTION_DEFAULT})
     if(DEFINED ENV{${OPTION_NAME}})
@@ -36,6 +35,8 @@ endmacro()
 
 include(${CMAKE_SOURCE_DIR}/src/js/CMakeLists.txt)
 add_subdirectory(deps/quickjs EXCLUDE_FROM_ALL)
+add_subdirectory(deps/wolfssl EXCLUDE_FROM_ALL)
+add_subdirectory(deps/glfw EXCLUDE_FROM_ALL)
 
 option(libuv_buildtests "" OFF)
 add_subdirectory(deps/libuv EXCLUDE_FROM_ALL)
@@ -50,7 +51,8 @@ if (NOT DISABLE_WASM)
 endif()
 
 cpr_option(DISABLE_CURL "If ON, curl support will be disabled" OFF)
-cpr_option(USE_SYSTEM_CURL "If ON, this project will look in the system paths for an installed curl library" ON)
+cpr_option(USE_SYSTEM_CURL "If ON, this project will look in the system paths for an installed curl library" OFF)
+
 
 if(NOT DISABLE_CURL)
     if(USE_SYSTEM_CURL)
@@ -61,6 +63,10 @@ if(NOT DISABLE_CURL)
         option(HTTP_ONLY "disables all protocols except HTTP" ON)
         option(BUILD_TESTING "Set to ON to build cURL tests." OFF)
         option(BUILD_CURL_EXE "Set to ON to build cURL executable." OFF)
+        option(CMAKE_USE_WOLFSSL "Set to ON for the WOLFSSL" ON)
+        set(WolfSSL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/deps/wolfssl)
+        #set(WolfSSL_LIBRARY     "-L${CMAKE_BINARY_DIR}/deps/wolfssl -lwolfssl")
+        set(WolfSSL_LIBRARY     ${CMAKE_BINARY_DIR}/deps/wolfssl)
         add_subdirectory(deps/curl)
         set(CURL_FOUND TRUE)
         set(CURL_LIBRARIES libcurl)
@@ -69,6 +75,9 @@ if(NOT DISABLE_CURL)
             ${CURL_BINARY_DIR}/include/curl)
     endif()
 endif()
+
+add_dependencies(libcurl wolfssl)
+configure_file(src/cacert.pem ${CMAKE_BINARY_DIR} COPYONLY)
 
 add_executable(tjs
     src/bootstrap.c
@@ -122,5 +131,31 @@ if (NOT DISABLE_WASM)
     )
     target_link_libraries(tjs m3)
 endif()
+#target_link_options(tjs INTERFACE "-rdynamic") for version > 3.13
+#SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "-rdynamic") 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -rdynamic") 
+target_link_libraries(tjs qjs uv_a m wolfssl)
 
-target_link_libraries(tjs qjs uv_a m)
+add_library(fib MODULE 
+      module/fib.c
+)
+
+target_include_directories(fib PRIVATE ${CMAKE_SOURCE_DIR}/deps/wolfssl)
+target_compile_definitions(fib PRIVATE JS_SHARED_LIBRARY)
+target_link_libraries(fib)
+add_library(qjs_glfw MODULE
+    module/glfw/glfw.c
+    module/glfw/size.c
+    module/glfw/scale.c
+    module/glfw/window.c
+    module/glfw/monitor.c
+    module/glfw/position.c
+    module/glfw/workarea.c
+    module/glfw/gamma_ramp.c
+    module/glfw/video_mode.c
+)
+target_include_directories(qjs_glfw PRIVATE ${CMAKE_SOURCE_DIR}/deps/quickjs/include)
+target_include_directories(qjs_glfw PRIVATE ${CMAKE_SOURCE_DIR}/deps/glfw/include)
+target_compile_definitions(qjs_glfw PRIVATE JS_SHARED_LIBRARY)
+target_link_libraries(qjs_glfw glfw)
+
