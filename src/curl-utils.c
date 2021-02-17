@@ -69,7 +69,8 @@ int tjs_curl_load_http(DynBuf *dbuf, const char *url) {
 
 #if defined(_WIN32) || !defined(TJS_HAVE_SYSTEM_CURL)
     curl_easy_setopt(curl_handle, CURLOPT_CAINFO, "cacert.pem");
-#else
+#endif
+#if !defined(TJS_HAVE_SYSTEM_CURL)
     curl_easy_setopt(curl_handle, CURLOPT_CAPATH, "/etc/ssl/certs/");
 #endif
 
